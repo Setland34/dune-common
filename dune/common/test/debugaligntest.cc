@@ -11,6 +11,9 @@
 #include <dune/common/test/arithmetictestsuite.hh>
 #include <dune/common/test/testsuite.hh>
 
+//! Exception thrown when an object is allocated with a misaligned address
+class MisalignedAddress : public Dune::RangeError {};
+
 class WithViolatedAlignmentHandler {
   Dune::ViolatedAlignmentHandler oldhandler;
 public:
@@ -39,9 +42,8 @@ public:
 template<class T>
 void checkAlignmentViolation(Dune::TestSuite &test)
 {
-  bool misalignmentDetected = false;
   WithViolatedAlignmentHandler
-    guard([&](auto&&...){ misalignmentDetected = true; });
+    guard([&](auto&&...){ throw MisalignedAddress{}; });
 
   static_assert(alignof(T) <= sizeof(T));
   char buffer[alignof(T)+sizeof(T)];
@@ -55,50 +57,52 @@ void checkAlignmentViolation(Dune::TestSuite &test)
     misalignedAddr = static_cast<char*>(misalignedAddr) + 1;
     test.check(not Dune::isAligned(misalignedAddr, alignof(T)), "We could not misalign an address");
   }
+auto ptr = new(misalignedAddr) T;
+test.check(misalignmentDetected, "default construct")
+  << "misalignment not detected for " << Dune::className<T>();
 
-  auto ptr = new(misalignedAddr) T;
-  test.check(misalignmentDetected, "default construct")
-    << "misalignment not detected for " << Dune::className<T>();
+misalignmentDetected = false;
 
-  misalignmentDetected = false;
+ptr = new(misalignedAddr) T(T(0));
+test.check(misalignmentDetected, "move construct")
+  << "misalignment not detected for " << Dune::className<T>();
+ptr->~T();
 
-  ptr = new(misalignedAddr) T(T(0));
-  test.check(misalignmentDetected, "move construct")
-    << "misalignment not detected for " << Dune::className<T>();
-  ptr->~T();
+misalignmentDetected = false;
 
-  misalignmentDetected = false;
+T t(0);
+ptr = new(misalignedAddr) T(t);
+test.check(misalignmentDetected, "copy construct")
+  << "misalignment not detected for " << Dune::className<T>();
+ptr->~T();
+=======
+  test.checkThrow<MisalignedAddress>([&]{
+    std::ignore = new(misalignedAddr) T;
+  }, "default construct") << "misaligned address was not caught" << Dune::className<T>();
+
+  test.checkThrow<MisalignedAddress>([&]{
+    std::ignore = new(misalignedAddr) T(T(0));
+  }, "move construct") << "misaligned address was not caught";
 
   T t(0);
-  ptr = new(misalignedAddr) T(t);
-  test.check(misalignmentDetected, "copy construct")
-    << "misalignment not detected for " << Dune::className<T>();
-  ptr->~T();
-}
+  test.checkThrow<MisalignedAddress>([&]{
+    std::ignore = new(misalignedAddr) T(t);
+  }, "copy construct") << "misaligned address was not caught";
+auto ptr = new(misalignedAddr) T;
+test.check(misalignmentDetected, "default construct")
+  << "misalignment not detected for " << Dune::className<T>();
 
-int main(int argc, char **argv)
-{
-  Dune::MPIHelper::instance(argc, argv);
+misalignmentDetected = false;
 
-  Dune::ArithmeticTestSuite test;
+ptr = new(misalignedAddr) T(T(0));
+test.check(misalignmentDetected, "move construct")
+  << "misalignment not detected for " << Dune::className<T>();
+ptr->~T();
 
-  using ArithmeticTypes = std::tuple<
-    bool,
-    char, signed char, unsigned char,
-    short, unsigned short,
-    int, unsigned,
-    long, long unsigned,
-    long long, long long unsigned,
-    wchar_t, char16_t, char32_t,
-    float, double, long double>;
+misalignmentDetected = false;
 
-  Dune::Hybrid::forEach(ArithmeticTypes(), [&](auto val) {
-      using T = decltype(val);
-      using Aligned = Dune::AlignedNumber<T>;
-      test.checkArithmetic<Aligned, T>();
-      if (alignof(T) > 1)
-        checkAlignmentViolation<Aligned>(test);
-    });
-
-  return test.exit();
-}
+T t(0);
+ptr = new(misalignedAddr) T(t);
+test.check(misalignmentDetected, "copy construct")
+  << "misalignment not detected for " << Dune::className<T>();
+ptr->~T();

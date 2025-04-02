@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightInfo: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 #include <array>
+#if __has_include(<concepts>)
+  #include <concepts>
+#endif
 #include <map>
 #include <utility>
 #include <vector>
@@ -8,6 +11,7 @@
 #include <type_traits>
 #include <optional>
 
+#include <dune/common/concepts.hh>
 #include <dune/common/hybridutilities.hh>
 #include <dune/common/iteratorrange.hh>
 #include <dune/common/rangeutilities.hh>
@@ -88,7 +92,7 @@ auto checkSameRange(R1&& r1, BeginIt2&& it2, EndIt2&& end2)
 {
   auto it1 = r1.begin();
   auto end1 = r1.end();
-  for(; (it1 < end1) and (it2 < end2); ++it1, ++it2)
+  for(; (it1 != end1) and (it2 != end2); ++it1, ++it2)
     if (*it1 != *it2)
       return false;
   if ((it1 != end1) or (it2 != end2))
@@ -316,6 +320,10 @@ auto testTransformedRangeView()
     auto end = transformedIterator(Dune::range(0,4).end(), [](auto x) {return 0;});
     suite.check(checkSameRange(std::vector{0, 2, 4, 6}, it, end))
       << "free TransformedRangeIterator's with raw lambdas yield wrong result";
+
+#if DUNE_ENABLE_CONCEPTS
+    static_assert(std::random_access_iterator<decltype(it)>);
+#endif
   }
   // Check creation of free iterators storing std::optional lambdas of different type
   {
@@ -329,6 +337,10 @@ auto testTransformedRangeView()
     auto end = transformedIterator(Dune::range(0,4).end(), [](auto x) {return 0;});
     suite.check(checkSameRange(std::vector{0, 2, 4, 6}, it, end))
       << "free TransformedRangeIterator's with lambdas in std::optional yield wrong result";
+
+#if DUNE_ENABLE_CONCEPTS
+    static_assert(std::random_access_iterator<decltype(it)>);
+#endif
   }
   return suite;
 }
@@ -375,11 +387,64 @@ auto testSparseRange()
 
 
 
+// An empty class tagging the end of a range
+class SentinelIterator
+{};
+
+// Classical use case for sentinels: An iterator for
+// a null-terminated string. Using a sentinel allows
+// to implement a range without a linear scan to find
+// the end or storing an additional isEnd flag in the
+// iterator.
+class NullTerminatedStringIterator
+{
+public:
+  NullTerminatedStringIterator(char* p)
+    : p_(p)
+  {}
+
+  NullTerminatedStringIterator& operator++()
+  {
+    ++p_;
+    return *this;
+  }
+
+  char& operator*()
+  {
+    return *p_;
+  }
+
+  friend bool operator==(const NullTerminatedStringIterator& it, const SentinelIterator& end)
+  {
+    return (*it.p_) == 0;
+  }
+
+private:
+  char* p_;
+};
+
+
+
+Dune::TestSuite testIteratorRange()
+{
+  Dune::TestSuite suite("Check IteratorRange with sentinel");
+
+  // Check sentinel terminated range for null-terminated string
+  char testStr[] = "FooBar";
+  auto range_sentinel = Dune::IteratorRange(NullTerminatedStringIterator(testStr), SentinelIterator());
+  suite.check(checkSameRange(range_sentinel, std::string_view(testStr)));
+
+  return suite;
+}
+
+
+
 int main()
 {
   // Check IsIterable<> for https://gitlab.dune-project.org/core/dune-common/issues/58
   static_assert(Dune::IsIterable< std::array<int, 3> >::value, "std::array<int> must be a range");
   static_assert(Dune::IsIterable< Dune::IteratorRange<int*> >::value, "IteratorRange must be a range");
+//  static_assert(Dune::IsIterable< Dune::IteratorRange<int*, void*> >::value, "IteratorRange must be a range");
   static_assert(!Dune::IsIterable< int >::value, "int must not be a range");
 
   Dune::TestSuite suite;
@@ -492,6 +557,8 @@ int main()
   suite.subTest(testTransformedRangeView());
 
   suite.subTest(testSparseRange());
+
+  suite.subTest(testIteratorRange());
 
   return suite.exit();
 

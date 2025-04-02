@@ -181,13 +181,16 @@ function(dune_add_library_normal _name)
   # Link with specified libraries from parameter ADD_LIBS
   target_link_libraries(${_name} PUBLIC "${ARG_LINK_LIBRARIES}")
 
+  # Activate warnings from all imported targets we link against
+  set_target_properties(${_name} PROPERTIES NO_SYSTEM_FROM_IMPORTED TRUE)
+
   # Set target options from COMPILE_FLAGS
   target_compile_options(${_name} PUBLIC "${ARG_COMPILE_OPTIONS}")
 
-  # Build library in ${PROJECT_BINARY_DIR}/lib
+  # Build library in ${CMAKE_BINARY_DIR}/lib
   set_target_properties(${_name} PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib"
-    ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
   # Set an output name for the created library file
   if(ARG_OUTPUT_NAME)
@@ -249,6 +252,9 @@ function(dune_add_library_interface _name)
 
   # Link with specified libraries from parameter LINK_LIBRARIES
   target_link_libraries(${_name} INTERFACE "${ARG_LINK_LIBRARIES}")
+
+  # Activate warnings from all imported targets we link against
+  set_target_properties(${_name} PROPERTIES NO_SYSTEM_FROM_IMPORTED TRUE)
 
   # Set target options from COMPILE_FLAGS
   target_compile_options(${_name} INTERFACE "${ARG_COMPILE_OPTIONS}")

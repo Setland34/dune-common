@@ -3,6 +3,12 @@ SPDX-FileCopyrightInfo: Copyright © DUNE Project contributors, see file LICENSE
 SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 -->
 
+- project: 'core/ci-config'
+  ref: master
+  file: 'config/common/releases/2.10.yml'
+- project: 'core/ci-config'
+  ref: master
+  file: 'jobs/common/releases/2.10.yml'
 # Release 2.10
 
 ## Dependencies
@@ -75,6 +81,8 @@ In order to build the DUNE core modules you need at least the following software
 - Add new utility type `IndexedIterator` that extends a given iterator by an `index()`
   method returning a traversal index.
 
+- remote: 'https://gitlab.dune-project.org/core/ci-config/raw/master/config/common/master.yml'
+- remote: 'https://gitlab.dune-project.org/core/ci-config/raw/master/jobs/common/master.yml'
 ## C++: Deprecations and removals
 
 - Remove deprecated macros `DUNE_VERSION_NEWER` and `DUNE_VERSION_NEWER_REV`, use `DUNE_VERSION_GTE`

@@ -681,7 +681,7 @@ struct PackEntries
     if(tracker.fixedSize) // fixed size if variable is >0!
     {
 
-      std::size_t noIndices=std::min(buffer.size()/tracker.fixedSize, tracker.indicesLeft());
+      std::size_t noIndices=std::min<std::size_t>(buffer.size()/tracker.fixedSize, tracker.indicesLeft());
       for(std::size_t i=0; i< noIndices; ++i)
       {
         handle.gather(buffer, tracker.index());
@@ -728,7 +728,7 @@ struct UnpackEntries{
   {
     if(tracker.fixedSize) // fixed size if variable is >0!
     {
-      std::size_t noIndices=std::min(buffer.size()/tracker.fixedSize, tracker.indicesLeft());
+      std::size_t noIndices=std::min<std::size_t>(buffer.size()/tracker.fixedSize, tracker.indicesLeft());
 
       for(std::size_t i=0; i< noIndices; ++i)
       {
@@ -770,7 +770,7 @@ struct UnpackSizeEntries{
   bool operator()(SizeDataHandle<DataHandle>& handle, InterfaceTracker& tracker,
                   MessageBuffer<typename SizeDataHandle<DataHandle>::DataType>& buffer) const
   {
-    std::size_t noIndices=std::min(buffer.size(), tracker.indicesLeft());
+    std::size_t noIndices=std::min<std::size_t>(buffer.size(), tracker.indicesLeft());
     std::copy(static_cast<std::size_t*>(buffer), static_cast<std::size_t*>(buffer)+noIndices,
               handle.getSizesPointer()+tracker.offset());
     tracker.increment(noIndices);
@@ -1002,7 +1002,7 @@ std::size_t checkReceiveAndContinueReceiving(DataHandle& handle,
 }
 
 
-bool validRecvRequests(const std::vector<MPI_Request> reqs)
+bool validRecvRequests(const std::vector<MPI_Request>& reqs)
 {
   for(std::vector<MPI_Request>::const_iterator i=reqs.begin(), end=reqs.end();
       i!=end; ++i)

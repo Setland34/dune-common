@@ -57,6 +57,9 @@ include(GNUInstallDirs)
 include(Headercheck)
 include(OverloadCompilerFlags)
 
+include(DunePolicy)
+dune_define_policy(DP_DEFAULT_INCLUDE_DIRS dune-common 2.12
+  "OLD behavior: Use global include_directories. NEW behavior: Include directories must be set on a module library target and are not set globally anymore.")
 
 # Macro that should be called near the beginning of the top level CMakeLists.txt.
 # Namely it sets up the module, defines basic variables and manages
@@ -163,12 +166,14 @@ macro(dune_project)
   include(CheckCXXFeatures)
 
   # set include path and link path for the current project.
-  include_directories("${PROJECT_BINARY_DIR}")
-  include_directories("${PROJECT_SOURCE_DIR}")
-  include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-  include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
-  include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
-  include_directories("${CMAKE_CURRENT_BINARY_DIR}/include_private")
+  dune_policy(GET DP_DEFAULT_INCLUDE_DIRS _include_policy)
+  if(_include_policy STREQUAL "OLD")
+    include_directories("${PROJECT_SOURCE_DIR}")
+    include_directories("${PROJECT_BINARY_DIR}")
+    include_directories("${PROJECT_BINARY_DIR}/include")
+    include_directories("${PROJECT_BINARY_DIR}/include_private")
+  endif()
+  unset(_include_policy)
   add_definitions(-DHAVE_CONFIG_H)
 
   # Create custom target for building the documentation
@@ -245,10 +250,12 @@ macro(finalize_dune_project)
   get_property(${ProjectName}_INTERFACE_LIBRARIES GLOBAL PROPERTY ${ProjectName}_INTERFACE_LIBRARIES)
 
   if(${ProjectName} STREQUAL "dune-common")
-    set(DUNE_CUSTOM_PKG_CONFIG_SECTION
-"set_and_check(@DUNE_MOD_NAME@_SCRIPT_DIR \"@PACKAGE_SCRIPT_DIR@\")
-set_and_check(DOXYSTYLE_FILE \"@PACKAGE_DOXYSTYLE_DIR@/Doxystyle\")
-set_and_check(DOXYGENMACROS_FILE \"@PACKAGE_DOXYSTYLE_DIR@/doxygen-macros\")")
+  string(JOIN "\n" DUNE_CUSTOM_PKG_CONFIG_SECTION ${DUNE_CUSTOM_PKG_CONFIG_SECTION}
+    [[set_and_check(@DUNE_MOD_NAME@_SCRIPT_DIR "@PACKAGE_SCRIPT_DIR@")]]
+    [[set_and_check(DOXYSTYLE_FILE "@PACKAGE_DOXYSTYLE_DIR@/Doxystyle")]]
+    [[set_and_check(DOXYGENMACROS_FILE "@PACKAGE_DOXYSTYLE_DIR@/doxygen-macros")]]
+  )
+
 endif()
 
   if(NOT EXISTS ${PROJECT_SOURCE_DIR}/cmake/pkg/${ProjectName}-config.cmake.in)
@@ -319,7 +326,7 @@ set(HAVE_${_upcase_module} TRUE)
 # Lines that are set by the CMake build system via the variable DUNE_CUSTOM_PKG_CONFIG_SECTION
 ${DUNE_CUSTOM_PKG_CONFIG_SECTION}
 
-# If this file is found in a super build that includes ${ProjectName}, the 
+# If this file is found in a super build that includes ${ProjectName}, the
 # `${ProjectName}-targets.cmake`-file has not yet been generated. This variable
 # determines whether the configuration of ${ProjectName} has been completed.
 get_property(${ProjectName}_IN_CONFIG_MODE GLOBAL PROPERTY ${ProjectName}_LIBRARIES DEFINED)
@@ -525,7 +532,9 @@ endif()")
   endif()
 
   # install pkg-config files
-  create_and_install_pkconfig(${DUNE_INSTALL_LIBDIR})
+  if(EXISTS ${PROJECT_SOURCE_DIR}/${ProjectName}.pc.in)
+    create_and_install_pkconfig(${DUNE_INSTALL_LIBDIR})
+  endif()
 
   ###########################
   ### HEADER CONFIG FILEs ###

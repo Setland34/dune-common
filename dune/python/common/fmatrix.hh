@@ -30,7 +30,7 @@ namespace Dune
     // -------------------
 
     template< class K, int m, int n, class ...options >
-    void registerFieldMatrix ( pybind11::handle scope, pybind11::class_<Dune::FieldMatrix<K,m,n>, options...> cls )
+    void registerFieldMatrix ( pybind11::handle /*scope*/, pybind11::class_<Dune::FieldMatrix<K,m,n>, options...> cls )
     {
       typedef Dune::FieldMatrix< K, m, n > FM;
       using pybind11::operator""_a;
@@ -49,7 +49,7 @@ namespace Dune
       cls.def( pybind11::init( [] ( pybind11::list rows ) {
           FM *self = new FM( K( 0 ) );
 
-          const std::size_t numRows = std::min( static_cast< std::size_t >( m ), rows.size() );
+          const std::size_t numRows = std::min<std::size_t>( m, rows.size() );
           for( std::size_t i = 0; i < numRows; ++i )
             (*self)[ i ] = pybind11::cast< Dune::FieldVector< K, n > >( rows[ i ] );
           return self;
@@ -68,7 +68,7 @@ namespace Dune
             }
             return s += ")";
           });
-      cls.def( "__repr__", [] ( const FM &self ) {
+      cls.def( "__repr__", [] ( const FM& /*self*/ ) {
           return "Dune::FieldMatrix<"+to_string(m)+","+to_string(n)+">(...)";
           } );
 
