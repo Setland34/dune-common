@@ -3,70 +3,12 @@ SPDX-FileCopyrightInfo: Copyright © DUNE Project contributors, see file LICENSE
 SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 -->
 
-# Master (will become release 2.11)
-
-## Build system: Changelog
-
-- Propagate dependencies of `dune-common` when consumed. This means that a CMake project may find
-  `dune-common` and consume the `Dune::Common` target without the need of the dune build system.
-
-- Change the way include directories are set in dune projects. OLD behavior: use `include_directories`
-  in `dune_project` to set include dirs for the current project. NEW behavior: Provide a utility
-  `dune_default_include_directories` to set include dirs on targets manually. Which behavior to
-  activate can be decided in each module by using the new dune policy `DP_DEFAULT_INCLUDE_DIRS`, which can be set
-  to `OLD` or `NEW` correspondingly.
-
-- The CMake function `dune_target_enable_all_packages` can now handle Interface libraries too.
-
-- Add a module-specific CMake target `build_<module>_tests` to compile only tests
-  associated to a specific `<module>`. Additionally, add the `<module>`-name as
-  `LABEL` property to all tests created with `dune_add_tests` in that module. This
-  allows to run these tests with `ctest -L <module>`.
-
-- Change the behavior of `dune_add_test`: Do not add all package flags automatically. This new behavior
-  can be controlled by the new Dune policy `DP_TEST_ADD_ALL_FLAGS`.
-
-## C++: Changelog
-
-- `Dune::IteratorRange` now supports different types for begin and end iterator
-  to model C++20's sentinel terminated ranges.
-
-- Add preprocessor macro `DUNE_FORCE_INLINE` as a portable attribute to force inlining of functions (if supported).
-
-- Add `bit_width` and `countl_zero` overloads for `bigunsignedint` objects.
-
-- `DUNE_THROW` no longer prevents functions from being used in `constexpr` contexts,
-  as long the exception is not thrown. As a sideproduct, the macros now
-  also supports the syntax `DUNE_THROW(ExceptionType, a << b) << c << d` and
-  `DUNE_THROW(ExceptionType) << a << b`.
-
-- Add `constexpr` qualifiers to many member functions of `DenseMatrix`, `FieldMatrix`, `DenseVector`,
-  `FieldVector`, `ForwardIteratorFacade`, `BidirectionalIteratorFacade`, `RandomAccessIteratorFacade`,
-  `TupleVector` and to the function `range`.
-
-- Add concepts `Std::three_way_comparable` and `Std::three_way_comparable_with` as well as an
-  algorithm `Std::lexicographical_compare_three_way` to provide library utilities for the `<=>`
-  comparison operator.
-
-- Add deduction guides to `TupleVector` analogous to `std::tuple`.
-
-- Add concept definition `Std::indirectly_copyable` to constrain the `DenseMatrixAssigner`.
-
-- Add concept definition `Concept::Number` to represent scalar number types in containers.
-
-- Add the macro `DUNE_ASSUME` for portable compiler assumption.
-
-## C++: Deprecations and removals
-
-- Deprecate the utility `integerSequenceEntry` in favour of the shorter `get` from `integersequence.hh`.
-
-## Python: Changelog
-
-- the `sdist` tar ball name should not use `-` (see PEP 625) so use `_` instead
-  `pip install dune-common` will still work as expected but `pip list` will
-  now show `dune_common` so the output of `pip list` is parsed anywhere
-  this is a breaking change.
-
+- project: 'core/ci-config'
+  ref: master
+  file: 'config/common/releases/2.10.yml'
+- project: 'core/ci-config'
+  ref: master
+  file: 'jobs/common/releases/2.10.yml'
 # Release 2.10
 
 ## Dependencies
@@ -139,9 +81,8 @@ In order to build the DUNE core modules you need at least the following software
 - Add new utility type `IndexedIterator` that extends a given iterator by an `index()`
   method returning a traversal index.
 
-- Add a macro `DUNE_NO_UNIQUE_ADDRESS` that expands to the attribute `[[no_unique_address]]`
-  or something similar, if supported by the compiler.
-
+- remote: 'https://gitlab.dune-project.org/core/ci-config/raw/master/config/common/master.yml'
+- remote: 'https://gitlab.dune-project.org/core/ci-config/raw/master/jobs/common/master.yml'
 ## C++: Deprecations and removals
 
 - Remove deprecated macros `DUNE_VERSION_NEWER` and `DUNE_VERSION_NEWER_REV`, use `DUNE_VERSION_GTE`
